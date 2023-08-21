@@ -8,8 +8,6 @@ volumes:
 services:
   redpanda-ockam:
     build: ./redpanda-with-ockam
-    environment:
-      OCKAM_TICKET: ${OCKAM_BROKER_TICKET}
     command:
       - redpanda
       - start
@@ -39,6 +37,7 @@ services:
     container_name: redpanda-ockam
     volumes:
       - redpanda:/var/lib/redpanda/data
+      - ./volumes/broker:/mnt
     networks:
       - redpanda_network
     ports:
@@ -48,10 +47,10 @@ services:
       - 19644:9644
   consumer:
     build: ./client-node
-    environment:
-      OCKAM_TICKET: ${OCKAM_CONSUMER_TICKET}    
     entrypoint:
       - /consumer.sh
+    volumes:
+      - ./volumes/consumer:/mnt
     command:
       - kafka-console-consumer.sh --topic demo --bootstrap-server 127.0.0.1:9092
     networks:

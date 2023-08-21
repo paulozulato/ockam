@@ -6,7 +6,7 @@ set -x
 /entrypoint.sh "$@" &
 
 ockam identity create 
-ockam project enroll $OCKAM_TICKET 
+ockam project enroll /mnt/ticket
 ockam node create --tcp-listener-address 0.0.0.0:6000
 sleep 2
 

@@ -5,7 +5,7 @@ set -x
 
 sleep 10
 ockam identity create 
-ockam project enroll $OCKAM_TICKET 
+ockam project enroll /mnt/ticket
 ockam node create
 ockam kafka-consumer create \
   --project-route /dnsaddr/redpanda-ockam/tcp/6000/secure/api \
