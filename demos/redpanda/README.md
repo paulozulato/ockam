@@ -62,3 +62,10 @@ instructions:
 ```console
 ./bin/up
 ```
+
+The script will have output more instructions at the end to tell you how to:
+
+* Tail the consumer log output to see what messages it receives
+* Start an interactive producer prompt so you can send messages to the consumer
+* Open the Redpanda dashboard in a browser so you can verify messages were
+indeed encrypted in transit through the broker
