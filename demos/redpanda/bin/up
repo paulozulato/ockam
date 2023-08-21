@@ -1,9 +1,9 @@
 #!/usr/bin/env sh
-export OCKAM_BROKER_TICKET=$(ockam project ticket)
-export OCKAM_CONSUMER_TICKET=$(ockam project ticket)
 
 mkdir -p volumes/producer
 mkdir -p volumes/consumer
+mkdir -p volumes/broker
+
 ockam project ticket > volumes/producer/ticket
 ockam project ticket > volumes/consumer/ticket
 ockam project ticket > volumes/broker/ticket
