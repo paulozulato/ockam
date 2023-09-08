@@ -1,20 +1,13 @@
-mod model;
-mod repository;
-
 #[cfg(debug_assertions)]
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 use miette::IntoDiagnostic;
-use ockam_multiaddr::MultiAddr;
 use tauri::async_runtime::{block_on, spawn, RwLock};
 use tracing::{error, info};
 
-pub(crate) use crate::app::state::model::ModelState;
-pub(crate) use crate::app::state::repository::{LmdbModelStateRepository, ModelStateRepository};
 use ockam::Context;
 use ockam::{NodeBuilder, TcpListenerOptions, TcpTransport};
-use ockam_api::address::controller_route;
 use ockam_api::cli_state::{
     add_project_info_to_node_state, init_node_state, CliState, StateDirTrait, StateItemTrait,
 };
@@ -26,8 +19,14 @@ use ockam_api::nodes::service::{
 };
 use ockam_api::nodes::{NodeManager, NodeManagerWorker, NODEMANAGER_ADDR};
 use ockam_api::trust_context::TrustContextConfigBuilder;
+use ockam_multiaddr::MultiAddr;
 
+pub(crate) use crate::app::state::model::ModelState;
+pub(crate) use crate::app::state::repository::{LmdbModelStateRepository, ModelStateRepository};
 use crate::Result;
+
+mod model;
+mod repository;
 
 pub const NODE_NAME: &str = "ockam_app";
 // TODO: static project name of "default" is an unsafe default behavior due to backend uniqueness requirements
@@ -42,7 +41,6 @@ pub const PROJECT_NAME: &str = "default";
 pub struct AppState {
     context: Arc<Context>,
     state: Arc<RwLock<CliState>>,
-    controller_address: Arc<MultiAddr>,
     node_manager_worker: Arc<RwLock<NodeManagerWorker>>,
     model_state: Arc<RwLock<ModelState>>,
     model_state_repository: Arc<RwLock<Arc<dyn ModelStateRepository>>>,
@@ -84,7 +82,6 @@ impl AppState {
         AppState {
             context,
             state: Arc::new(RwLock::new(cli_state)),
-            controller_address: Arc::new(controller_route()),
             node_manager_worker: Arc::new(RwLock::new(node_manager_worker)),
             model_state: Arc::new(RwLock::new(model_state)),
             model_state_repository: Arc::new(RwLock::new(model_state_repository)),
@@ -149,11 +146,6 @@ impl AppState {
     /// This can be used to run async actions involving the Router
     pub fn context(&self) -> Arc<Context> {
         self.context.clone()
-    }
-
-    /// Returns the address being used to contact Orchestrator
-    pub fn controller_address(&self) -> Arc<MultiAddr> {
-        self.controller_address.clone()
     }
 
     /// Return the application cli state
@@ -221,6 +213,10 @@ impl AppState {
     pub fn set_browser_dev_tools(&self, value: bool) {
         self.browser_dev_tools
             .store(value, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    pub async fn controller_address(&self) -> MultiAddr {
+        self.node_manager_worker().await.controller_address().await
     }
 }
 

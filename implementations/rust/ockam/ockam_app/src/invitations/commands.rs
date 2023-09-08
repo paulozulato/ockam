@@ -1,6 +1,7 @@
-use miette::IntoDiagnostic;
 use std::net::SocketAddr;
 use std::str::FromStr;
+
+use miette::IntoDiagnostic;
 use tauri::{AppHandle, Manager, Runtime, State};
 use tracing::{debug, info, trace, warn};
 
@@ -30,12 +31,7 @@ async fn accept_invitation_impl<R: Runtime>(id: String, app: &AppHandle<R>) -> c
     let state: State<'_, AppState> = app.state();
     let node_manager_worker = state.node_manager_worker().await;
     let res = node_manager_worker
-        .accept_invitation(
-            &state.context(),
-            AcceptInvitation { id },
-            &state.controller_address(),
-            None,
-        )
+        .accept_invitation(&state.context(), AcceptInvitation { id }, None)
         .await?;
     debug!(?res);
     Ok(())
@@ -92,12 +88,7 @@ async fn send_invitation<R: Runtime>(
     let state: State<'_, AppState> = app.state();
     let node_manager_worker = state.node_manager_worker().await;
     let res = node_manager_worker
-        .create_service_invitation(
-            &state.context(),
-            invite_args,
-            &state.controller_address(),
-            None,
-        )
+        .create_service_invitation(&state.context(), invite_args, None)
         .await
         .map_err(|e| e.to_string());
     debug!(?res, "invitation sent");
@@ -118,7 +109,6 @@ pub async fn refresh_invitations<R: Runtime>(app: AppHandle<R>) -> Result<(), St
             ListInvitations {
                 kind: InvitationListKind::All,
             },
-            &state.controller_address(),
             None,
         )
         .await
