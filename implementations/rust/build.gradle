@@ -141,8 +141,17 @@ task build_docs {
   }
 }
 
+task tauri_cli {
+  doLast {
+    exec {
+      environment environmentVars()
+      commandLine cargo('install', 'tauri-cli', '--git', 'https://github.com/build-trust/tauri.git', '--branch', 'add-url-scheme', '--force')
+    }
+  }
+}
+
 task build {
-  dependsOn lint_environment_variables
+  dependsOn lint_environment_variables, tauri_cli
   doLast {
     exec {
       environment environmentVars()
