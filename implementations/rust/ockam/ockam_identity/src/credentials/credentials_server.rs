@@ -1,18 +1,19 @@
+use async_trait::async_trait;
+use minicbor::Decoder;
+
+use ockam_core::api::{Request, Response, Status};
+use ockam_core::compat::sync::Arc;
+use ockam_core::errcode::{Kind, Origin};
+use ockam_core::{Address, Error, Result, Route};
+use ockam_node::api::{request, request_with_local_info};
+use ockam_node::{Context, WorkerBuilder};
+
 use crate::credential::Credential;
 use crate::credentials::credentials_server_worker::CredentialsServerWorker;
 use crate::credentials::Credentials;
 use crate::identity::Identity;
 use crate::secure_channel::IdentitySecureChannelLocalInfo;
 use crate::{IdentityIdentifier, TrustContext};
-use async_trait::async_trait;
-use minicbor::Decoder;
-use ockam_core::api::{Request, Response, Status};
-use ockam_core::compat::boxed::Box;
-use ockam_core::compat::sync::Arc;
-use ockam_core::errcode::{Kind, Origin};
-use ockam_core::{Address, Error, Result, Route};
-use ockam_node::api::{request, request_with_local_info};
-use ockam_node::{Context, WorkerBuilder};
 
 /// This trait allows an identity to send its credential to another identity
 /// located at the end of a secure channel route
@@ -65,14 +66,8 @@ impl CredentialsServer for CredentialsServerModule {
         credential: Credential,
     ) -> Result<()> {
         let path = "actions/present_mutual";
-        let (buf, local_info) = request_with_local_info(
-            ctx,
-            "credential",
-            None,
-            route,
-            Request::post(path).body(credential),
-        )
-        .await?;
+        let (buf, local_info) =
+            request_with_local_info(ctx, route, Request::post(path).body(credential)).await?;
 
         let their_id = IdentitySecureChannelLocalInfo::find_info_from_list(&local_info)?
             .their_identity_id()
@@ -115,8 +110,6 @@ impl CredentialsServer for CredentialsServerModule {
     ) -> Result<()> {
         let buf = request(
             ctx,
-            "credential",
-            None,
             route,
             Request::post("actions/present").body(credential),
         )

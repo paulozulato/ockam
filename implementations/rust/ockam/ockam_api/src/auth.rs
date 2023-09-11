@@ -1,7 +1,8 @@
-pub mod types;
-
 use core::fmt;
+
 use minicbor::Decoder;
+use tracing::trace;
+
 use ockam::identity::{AttributesEntry, IdentityAttributesReader, IdentityIdentifier};
 use ockam_core::api::{decode_option, Error};
 use ockam_core::api::{Method, Request, Response};
@@ -9,7 +10,8 @@ use ockam_core::compat::sync::Arc;
 use ockam_core::{self, Address, DenyAll, Result, Route, Routed, Worker};
 use ockam_node::api::request;
 use ockam_node::Context;
-use tracing::trace;
+
+pub mod types;
 
 /// Auth API server.
 pub struct Server {
@@ -107,13 +109,13 @@ impl Client {
     pub async fn get(&mut self, id: &str) -> ockam_core::Result<Option<AttributesEntry>> {
         let label = "get attribute";
         let req = Request::get(format!("/{id}"));
-        self.buf = request(&self.ctx, label, None, self.route.clone(), req).await?;
+        self.buf = request(&self.ctx, self.route.clone(), req).await?;
         decode_option(label, "attribute", &self.buf)
     }
     pub async fn list(&mut self) -> ockam_core::Result<Vec<(IdentityIdentifier, AttributesEntry)>> {
         let label = "list known identities";
         let req = Request::get("/");
-        self.buf = request(&self.ctx, label, None, self.route.clone(), req).await?;
+        self.buf = request(&self.ctx, self.route.clone(), req).await?;
         let a: Option<Vec<(IdentityIdentifier, AttributesEntry)>> =
             decode_option(label, "attribute", &self.buf)?;
         Ok(a.unwrap())
