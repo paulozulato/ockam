@@ -1,19 +1,16 @@
+use std::collections::BTreeMap;
+
 use minicbor::{Decode, Encode};
+
 use ockam::identity::credential::{Attributes, Timestamp};
 use ockam::identity::IdentityIdentifier;
 use ockam_core::compat::borrow::Cow;
 use ockam_core::CowBytes;
-use std::collections::BTreeMap;
-
-#[cfg(feature = "tag")]
-use ockam_core::TypeTag;
 
 #[derive(Debug, Decode, Encode)]
 #[rustfmt::skip]
 #[cbor(map)]
 pub struct VerifyRequest<'a> {
-    #[cfg(feature = "tag")]
-    #[n(0)] tag: TypeTag<4592146>,
     #[b(1)] cred: CowBytes<'a>,
     #[n(2)] subj: IdentityIdentifier,
     #[b(3)] auth: BTreeMap<IdentityIdentifier, CowBytes<'a>>
@@ -23,8 +20,6 @@ pub struct VerifyRequest<'a> {
 #[rustfmt::skip]
 #[cbor(map)]
 pub struct VerifyResponse {
-    #[cfg(feature = "tag")]
-    #[n(0)] tag: TypeTag<6845123>,
     #[b(1)] attrs: Attributes,
     #[n(2)] expires: Timestamp
 }
@@ -32,8 +27,6 @@ pub struct VerifyResponse {
 impl<'a> VerifyRequest<'a> {
     pub fn new<C: Into<Cow<'a, [u8]>>>(cred: C, subj: IdentityIdentifier) -> Self {
         Self {
-            #[cfg(feature = "tag")]
-            tag: TypeTag,
             cred: CowBytes(cred.into()),
             subj,
             auth: BTreeMap::new(),
@@ -67,12 +60,7 @@ impl<'a> VerifyRequest<'a> {
 
 impl VerifyResponse {
     pub fn new(attrs: Attributes, expires: Timestamp) -> Self {
-        Self {
-            #[cfg(feature = "tag")]
-            tag: TypeTag,
-            attrs,
-            expires,
-        }
+        Self { attrs, expires }
     }
 
     pub fn attributes(&self) -> &Attributes {

@@ -9,8 +9,6 @@ use serde::{Serialize, Serializer};
 #[cfg(feature = "std")]
 use std::ops::Deref;
 
-#[cfg(feature = "tag")]
-use crate::TypeTag;
 use crate::Unverified;
 
 /// Credential data + signature for that data
@@ -18,8 +16,6 @@ use crate::Unverified;
 #[rustfmt::skip]
 #[cbor(map)]
 pub struct Credential {
-    #[cfg(feature = "tag")]
-    #[n(0)] tag: TypeTag<3796735>,
     /// CBOR-encoded [`CredentialData`].
     #[cbor(with = "minicbor::bytes")]
     #[n(1)] pub data: Vec<u8>,
@@ -40,12 +36,7 @@ impl Credential {
     }
 
     pub(crate) fn new(data: Vec<u8>, signature: Vec<u8>) -> Self {
-        Credential {
-            #[cfg(feature = "tag")]
-            tag: TypeTag,
-            data,
-            signature,
-        }
+        Credential { data, signature }
     }
 }
 

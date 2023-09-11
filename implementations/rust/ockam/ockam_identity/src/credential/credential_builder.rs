@@ -1,5 +1,6 @@
 use core::marker::PhantomData;
 use core::time::Duration;
+
 use ockam_core::compat::collections::HashMap;
 use ockam_core::compat::string::String;
 use ockam_core::errcode::{Kind, Origin};
@@ -10,9 +11,6 @@ use crate::credential::{
 };
 use crate::identity::identity_change::IdentityChangeConstants;
 use crate::identity::IdentityIdentifier;
-
-#[cfg(feature = "tag")]
-use crate::TypeTag;
 
 /// Convenience structure to create [`Credential`](crate::Credential)s.
 pub struct CredentialBuilder {

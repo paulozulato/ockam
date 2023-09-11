@@ -16,9 +16,6 @@ use time::format_description::well_known::iso8601::{Iso8601, TimePrecision};
 #[cfg(feature = "std")]
 use time::{Error::Format, OffsetDateTime};
 
-#[cfg(feature = "tag")]
-use crate::TypeTag;
-
 /// Identifier for the schema of a project credential
 pub const PROJECT_MEMBER_SCHEMA: SchemaId = SchemaId(1);
 
@@ -261,8 +258,6 @@ impl TryFrom<&[u8]> for CredentialData<Unverified> {
 #[rustfmt::skip]
 #[cbor(map)]
 pub struct Attributes {
-    #[cfg(feature = "tag")]
-    #[n(0)] tag: TypeTag<4724285>,
     #[b(1)] attrs: BTreeMap<String, ByteVec>,
 }
 
@@ -270,8 +265,6 @@ impl Attributes {
     /// Create a new empty attribute set.
     pub fn new() -> Self {
         Attributes {
-            #[cfg(feature = "tag")]
-            tag: TypeTag,
             attrs: BTreeMap::new(),
         }
     }

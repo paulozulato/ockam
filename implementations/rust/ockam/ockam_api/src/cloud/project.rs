@@ -5,8 +5,6 @@ use serde::{Deserialize, Serialize};
 
 use ockam::identity::IdentityIdentifier;
 use ockam_core::Result;
-#[cfg(feature = "tag")]
-use ockam_core::TypeTag;
 use ockam_multiaddr::MultiAddr;
 use ockam_node::tokio;
 
@@ -20,11 +18,6 @@ use super::share::RoleInShare;
 #[derive(Encode, Decode, Serialize, Deserialize, Debug, Default, Clone, Eq, PartialEq)]
 #[cbor(map)]
 pub struct Project {
-    #[cfg(feature = "tag")]
-    #[serde(skip)]
-    #[cbor(n(0))]
-    pub tag: TypeTag<9056532>,
-
     #[cbor(n(1))]
     pub id: String,
 
@@ -120,11 +113,6 @@ impl Project {
 #[derive(Decode, Serialize, Deserialize, Debug, Default, Clone, Eq, PartialEq)]
 #[cbor(map)]
 pub struct ProjectVersion {
-    #[cfg(feature = "tag")]
-    #[serde(skip)]
-    #[cbor(n(0))]
-    pub tag: TypeTag<9116532>,
-
     /// The version of the Orchestrator Controller
     #[cbor(n(1))]
     pub version: Option<String>,
@@ -138,9 +126,6 @@ pub struct ProjectVersion {
 #[rustfmt::skip]
 #[cbor(map)]
 pub struct OktaConfig {
-    #[cfg(feature = "tag")]
-    #[serde(skip)]
-    #[cbor(n(0))] pub tag: TypeTag<6434814>,
     #[cbor(n(1))] pub tenant_base_url: Url,
     #[cbor(n(2))] pub certificate: String,
     #[cbor(n(3))] pub client_id: String,
@@ -155,8 +140,6 @@ impl OktaConfig {
         attributes: Vec<String>,
     ) -> Self {
         Self {
-            #[cfg(feature = "tag")]
-            tag: TypeTag,
             tenant_base_url,
             certificate: certificate.to_string(),
             client_id: client_id.to_string(),
@@ -170,8 +153,6 @@ impl OktaConfig {
         client_id: S,
     ) -> Self {
         Self {
-            #[cfg(feature = "tag")]
-            tag: TypeTag,
             tenant_base_url,
             certificate: certificate.to_string(),
             client_id: client_id.to_string(),
@@ -207,9 +188,6 @@ impl From<OktaAuth0> for OktaConfig {
 #[rustfmt::skip]
 #[cbor(map)]
 pub struct InfluxDBTokenLeaseManagerConfig {
-    #[cfg(feature = "tag")]
-    #[serde(skip)]
-    #[cbor(n(0))] pub tag: TypeTag<4166488>,
     #[cbor(n(1))] pub endpoint: String,
     #[cbor(n(2))] pub token: String,
     #[cbor(n(3))] pub org_id: String,
@@ -234,8 +212,6 @@ impl InfluxDBTokenLeaseManagerConfig {
         let aar: Option<String> = admin_access_rule.map(|s| s.into());
 
         Self {
-            #[cfg(feature = "tag")]
-            tag: TypeTag,
             endpoint: endpoint.into(),
             token: token.into(),
             org_id: org_id.into(),
@@ -252,20 +228,13 @@ impl InfluxDBTokenLeaseManagerConfig {
 #[rustfmt::skip]
 #[cbor(map)]
 pub struct CreateProject {
-    #[cfg(feature = "tag")]
-    #[n(0)] pub tag: TypeTag<8669570>,
     #[n(1)] pub name: String,
     #[n(3)] pub users: Vec<String>,
 }
 
 impl CreateProject {
     pub fn new(name: String, users: Vec<String>) -> Self {
-        Self {
-            #[cfg(feature = "tag")]
-            tag: TypeTag,
-            name,
-            users,
-        }
+        Self { name, users }
     }
 }
 
@@ -476,15 +445,39 @@ mod node {
 
 #[cfg(test)]
 mod tests {
-    use quickcheck::{Arbitrary, Gen};
+    use quickcheck::{quickcheck, Arbitrary, Gen, TestResult};
+
+    use crate::schema::tests::validate_with_schema;
 
     use super::*;
+
+    quickcheck! {
+        fn project(p: Project) -> TestResult {
+            validate_with_schema("project", p)
+        }
+
+        fn projects(ps: Vec<Project>) -> TestResult {
+            validate_with_schema("projects", ps)
+        }
+
+        fn create_project(cp: CreateProject) -> TestResult {
+            validate_with_schema("create_project", cp)
+        }
+    }
+
+    #[test]
+    fn convert_access_route_to_socket_addr() {
+        let mut g = Gen::new(100);
+        let mut p = Project::arbitrary(&mut g);
+        p.access_route = "/dnsaddr/node.dnsaddr.com/tcp/4000/service/api".into();
+
+        let socket_addr = p.access_route_socket_addr().unwrap();
+        assert_eq!(&socket_addr, "node.dnsaddr.com:4000");
+    }
 
     impl Arbitrary for OktaConfig {
         fn arbitrary(g: &mut Gen) -> Self {
             Self {
-                #[cfg(feature = "tag")]
-                tag: Default::default(),
                 tenant_base_url: Url::new(url::Url::parse("http://example.com/").unwrap()),
                 certificate: String::arbitrary(g),
                 client_id: String::arbitrary(g),
@@ -493,14 +486,9 @@ mod tests {
         }
     }
 
-    #[derive(Debug, Clone)]
-    struct Pr(Project);
-
-    impl Arbitrary for Pr {
+    impl Arbitrary for Project {
         fn arbitrary(g: &mut Gen) -> Self {
-            Pr(Project {
-                #[cfg(feature = "tag")]
-                tag: Default::default(),
+            Project {
                 id: String::arbitrary(g),
                 name: String::arbitrary(g),
                 space_name: String::arbitrary(g),
@@ -518,74 +506,16 @@ mod tests {
                 running: bool::arbitrary(g).then(|| bool::arbitrary(g)),
                 operation_id: bool::arbitrary(g).then(|| String::arbitrary(g)),
                 user_roles: vec![],
-            })
+            }
         }
     }
 
-    #[derive(Debug, Clone)]
-    struct CPr(CreateProject);
-
-    impl Arbitrary for CPr {
+    impl Arbitrary for CreateProject {
         fn arbitrary(g: &mut Gen) -> Self {
-            CPr(CreateProject {
-                #[cfg(feature = "tag")]
-                tag: Default::default(),
+            CreateProject {
                 name: String::arbitrary(g),
                 users: vec![String::arbitrary(g), String::arbitrary(g)],
-            })
-        }
-    }
-
-    mod schema {
-        use cddl_cat::validate_cbor_bytes;
-        use quickcheck::{quickcheck, TestResult};
-
-        use crate::schema::SCHEMA;
-
-        use super::*;
-
-        quickcheck! {
-            fn project(o: Pr) -> TestResult {
-                let cbor = minicbor::to_vec(o.0).unwrap();
-                if let Err(e) = validate_cbor_bytes("project", SCHEMA, &cbor) {
-                    return TestResult::error(e.to_string())
-                }
-                TestResult::passed()
-            }
-
-            fn projects(o: Vec<Pr>) -> TestResult {
-                let empty: Vec<Project> = vec![];
-                let cbor = minicbor::to_vec(empty).unwrap();
-                if let Err(e) = validate_cbor_bytes("projects", SCHEMA, &cbor) {
-                    return TestResult::error(e.to_string())
-                }
-                TestResult::passed();
-
-                let o: Vec<Project> = o.into_iter().map(|p| p.0).collect();
-                let cbor = minicbor::to_vec(o).unwrap();
-                if let Err(e) = validate_cbor_bytes("projects", SCHEMA, &cbor) {
-                    return TestResult::error(e.to_string())
-                }
-                TestResult::passed()
-            }
-
-            fn create_project(o: CPr) -> TestResult {
-                let cbor = minicbor::to_vec(o.0).unwrap();
-                if let Err(e) = validate_cbor_bytes("create_project", SCHEMA, &cbor) {
-                    return TestResult::error(e.to_string())
-                }
-                TestResult::passed()
             }
         }
-    }
-
-    #[test]
-    fn convert_access_route_to_socket_addr() {
-        let mut g = Gen::new(100);
-        let mut p = Pr::arbitrary(&mut g).0;
-        p.access_route = "/dnsaddr/node.dnsaddr.com/tcp/4000/service/api".into();
-
-        let socket_addr = p.access_route_socket_addr().unwrap();
-        assert_eq!(&socket_addr, "node.dnsaddr.com:4000");
     }
 }
