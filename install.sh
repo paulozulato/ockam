@@ -25,7 +25,7 @@ ansi_escapes_are_valid() {
   if [ -t 2 ]; then
     if [ "${TERM+set}" = 'set' ]; then
       case "$TERM" in
-      xterm* | rxvt* | urxvt* | linux* | vt*)
+      xterm* | rxvt* | urxvt* | linux* | vt* | *-256color)
         _ansi_escapes_are_valid=true
         ;;
       esac
